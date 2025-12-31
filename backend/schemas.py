@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
 from datetime import datetime
 
 
@@ -13,5 +13,4 @@ class URLInfo(BaseModel):
     created_at: datetime
     hits: int
 
-    class Config:
-        from_atributes = True
+    model_config= ConfigDict(from_attributes=True)
