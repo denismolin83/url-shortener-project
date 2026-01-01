@@ -1,11 +1,50 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 
 import crud, schemas
 from core.database import get_db_session
 
 app = FastAPI(title="URL Shortener")
+
+#Настрока CORS
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.exception_handler(RequestValidationError)
+async def valedation_exception_handler(request: Request, exc: RequestValidationError):
+
+    errors = exc.errors()
+
+    custom_msg = "Некорректный адрес: "
+    if errors:
+        err = errors[0]
+        if err['type'] == 'url_parsing':
+            custom_msg += "убедитесь, что указан протокол (http:// или https://)"
+        elif err['type'] == 'url_scheme':
+            custom_msg += "поддерживаются только протоколы http и https"
+        else:
+            custom_msg += err.get('msg', 'неизвестная ошибка валидации')
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        content={"detail": custom_msg}
+    )
+
+
 
 #Эндпоинт для созжания коротого URL
 @app.post(path="/shorten", response_model=schemas.URLInfo)
