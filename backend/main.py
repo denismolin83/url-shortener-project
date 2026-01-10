@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
+import os
 
 import crud, schemas
 from core.database import get_db_session
@@ -13,11 +14,8 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     docs_url="/api/docs")
 
-#Настрока CORS
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173"
-]
+raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+origins = [origin.strip() for origin in raw_origins.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
