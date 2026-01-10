@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-user_name}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-supersecretpassword}
+      - POSTGRES_DB=${POSTGRES_DB:-url_shortener_db}
+    volumes:
+      - db_data:/var/lib/postgresql/data  # Исправлен путь
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend-app:
+    build: ./backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    networks:
+      - app-network
+
+  frontend-app:
+    build: ./frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend-app
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data:
